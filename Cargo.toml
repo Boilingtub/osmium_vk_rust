@@ -1,0 +1,30 @@
+[package]
+name = "osmium-vulkanalia"
+authors = ["Jan-hendrik Brink <https://github.com/Boilingtub>"]
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+log = "0.4"
+pretty_env_logger = "0.5"
+thiserror = "2"
+cgmath = "0.18"
+png = "0.17"
+tobj = { version = "4", features = ["log"]}
+vulkanalia = {version = "0.28", features = ["libloading", "provisional", "window"]}
+winit = "0.29"
+
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = '...'  # Platform-specific.
+strip = "debuginfo"
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
