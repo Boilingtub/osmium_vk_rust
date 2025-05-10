@@ -3,7 +3,7 @@ macro_rules! p {
         println!("cargo::warning={}", format!($($tokens)*))
     }
 }
-use std::{io::stdout, process::Command};
+use std::process::Command;
 fn main() {
     p!("BUILD.rs -> Starting ...");
     let out_dir = &(format!("{}/../../..", std::env::var("OUT_DIR").unwrap()));

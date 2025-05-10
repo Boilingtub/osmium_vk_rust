@@ -1,4 +1,4 @@
-//146
+//159
 #![allow(   
     dead_code,
     unused_variables,
@@ -987,34 +987,25 @@ unsafe fn create_sync_objects(device: &Device, data: &mut AppData) -> Result<()>
 unsafe fn create_vertex_buffer(instance: &Instance, device: &Device, data:&mut AppData)
     -> Result<()> {
         // Buffer
-        let buffer_info = vk::BufferCreateInfo::builder()
-            .size((size_of::<Vertex>() * VERTICES.len()) as u64)
-            .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
-            .sharing_mode(vk::SharingMode::EXCLUSIVE);
+        let size = (size_of::<Vertex>() * VERTICES.len()) as u64;        
 
-        data.vertex_buffer = device.create_buffer(&buffer_info, None)?;
-        
-        //Memory
-        let requirments = device.get_buffer_memory_requirements(data.vertex_buffer);
-
-        let memory_info = vk::MemoryAllocateInfo::builder()
-            .allocation_size(requirments.size)
-            .memory_type_index(get_memory_type_index(
-                    instance,
-                    data,
-                    vk::MemoryPropertyFlags::HOST_COHERENT |
-                    vk::MemoryPropertyFlags::HOST_VISIBLE,
-                    requirments,
-                )?);
-
-        data.vertex_buffer_memory = device.allocate_memory(&memory_info, None)?;
+        let (vertex_buffer, vertex_buffer_memory) = create_buffer(
+            instance,
+            device,
+            data,
+            size,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk::MemoryPropertyFlags::HOST_COHERENT | vk::MemoryPropertyFlags::HOST_VISIBLE,
+        )?;
+        data.vertex_buffer = vertex_buffer;
+        data.vertex_buffer_memory = vertex_buffer_memory;
         device.bind_buffer_memory(data.vertex_buffer, data.vertex_buffer_memory, 0)?;
 
         //Copy 
         let memory = device.map_memory(
-            data.vertex_buffer_memory,
+            vertex_buffer_memory,
             0,
-            buffer_info.size,
+            size,
             vk::MemoryMapFlags::empty(),
         )?;
 
@@ -1022,6 +1013,40 @@ unsafe fn create_vertex_buffer(instance: &Instance, device: &Device, data:&mut A
         device.unmap_memory(data.vertex_buffer_memory);
         Ok(())
 }
+
+// ====================================================
+//  Shared (Buffers)
+// ====================================================
+unsafe fn create_buffer(instance: &Instance,
+    device: &Device,
+    data: &AppData,
+    size: vk::DeviceSize,
+    usage: vk::BufferUsageFlags,
+    properties: vk::MemoryPropertyFlags) -> Result<(vk::Buffer, vk::DeviceMemory)>   {
+    let buffer_info = vk::BufferCreateInfo::builder()
+        .size(size)
+        .usage(usage)
+        .sharing_mode(vk::SharingMode::EXCLUSIVE);
+
+    let buffer = device.create_buffer(&buffer_info, None)?;
+    let requirements = device.get_buffer_memory_requirements(buffer);
+
+    let memory_info = vk::MemoryAllocateInfo::builder()
+        .allocation_size(requirements.size)
+        .memory_type_index(
+            get_memory_type_index(instance, data, properties, requirements)?
+        );
+    let buffer_memory = device.allocate_memory(&memory_info, None)?;
+
+    device.bind_buffer_memory(buffer, buffer_memory ,0)?;
+
+    Ok((buffer,buffer_memory))
+    
+
+}
+// ====================================================
+//  Shared (Other)
+// ====================================================
 
 //================================================
 // Memory
@@ -1150,3 +1175,6 @@ impl Vertex {
         [pos, color]
     }
 }
+
+
+
